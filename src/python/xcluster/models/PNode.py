@@ -270,7 +270,9 @@ class PNode:
                 #self.parent._update_children_max_d()
             self._update_sibling_min_d()
             self._update_sibling_max_d()
-             
+            for sib in self.siblings():
+                sib._update_sibling_min_d()
+                sib._update_sibling_max_d()
 
             # Now check if we need to update the parent (2 condiations):
             # First, find out if self's mins or maxes changed. If they have, we
@@ -297,6 +299,9 @@ class PNode:
                 #self.parent._update_children_max_d()
             self._update_sibling_min_d()
             self._update_sibling_max_d()
+            for sib in self.siblings():
+                sib._update_sibling_min_d()
+                sib._update_sibling_max_d()
             return self, True
 
     def _update_params_recursively(self):
@@ -359,7 +364,7 @@ class PNode:
                     max(c1.max_distance(c0.mins), c1.max_distance(c0.maxes)))
             else:
                 c2 = self.children[2]
-                self.children_min_d = min(
+                self.children_max_d = min(
                     max(c0.max_distance(c1.mins), c0.max_distance(c1.maxes)),
                     max(c1.max_distance(c0.mins), c1.max_distance(c0.maxes)),
                     max(c0.max_distance(c2.mins), c0.max_distance(c2.maxes)),
@@ -402,16 +407,16 @@ class PNode:
         if self.siblings():
             s0 = self.siblings()[0]
             if len(self.siblings()) == 1:
-                self.sibling_min_d = min(
-                    max(s0.min_distance(self.mins), s0.min_distance(self.maxes)),
-                    max(self.min_distance(s0.mins), self.min_distance(s0.maxes)))
+                self.sibling_max_d = min(
+                    max(s0.max_distance(self.mins), s0.max_distance(self.maxes)),
+                    max(self.max_distance(s0.mins), self.max_distance(s0.maxes)))
             else:
                 s1 = self.siblings()[1]
-                self.sibling_min_d = min(
-                    max(s0.min_distance(self.mins), s0.min_distance(self.maxes)),
-                    max(self.min_distance(s0.mins), self.min_distance(s0.maxes)),
-                    max(s1.min_distance(self.mins), s1.min_distance(self.maxes)),
-                    max(self.min_distance(s1.mins), self.min_distance(s1.maxes)))
+                self.sibling_max_d = min(
+                    max(s0.max_distance(self.mins), s0.max_distance(self.maxes)),
+                    max(self.max_distance(s0.mins), self.max_distance(s0.maxes)),
+                    max(s1.max_distance(self.mins), s1.max_distance(self.maxes)),
+                    max(self.max_distance(s1.mins), self.max_distance(s1.maxes)))
 
     def a_star_exact(self, pt, heuristic=lambda n, x: n.min_distance(x)):
         """A* search for the nearest neighbor of pt in tree rooted at self.
@@ -614,7 +619,7 @@ class PNode:
             # Update cached distances. Other cached distances will be updated later.
             #self.parent._update_children_min_d()
             #self.parent._update_children_max_d()
-            for child in self.parent.children:
+            for child in self.siblings()[0].children:
                 child._update_sibling_min_d()
                 child._update_sibling_max_d()
             new_parent._update()
@@ -652,13 +657,7 @@ class PNode:
             new_sibling2._update()
             
             #new_parent._update_children_min_d()
-            #new_parent._update_children_max_d()
-            for child in new_parent.children:
-                child._update_sibling_min_d()
-                child._update_sibling_max_d()                
-            new_parent._update()
-
-            
+            #new_parent._update_children_max_d()            
 
     def recursive_rotate_if_masked(self, collapsibles=None):
         """Rotate recursively if masking detected.
@@ -709,46 +708,30 @@ class PNode:
         Returns:
         None.
         """
-        curr_node = self
-        siblings = curr_node.siblings()
+        curr_node = self.siblings()[0]
         r = curr_node.root()
         while curr_node != r:
-            sibling = siblings[0]
-            sibling1 = siblings[len(siblings)-1]
-            rotate_order = sorted([sibling, sibling1, curr_node],
+            sibling = curr_node.siblings()[0]
+            rotate_order = sorted([sibling, curr_node],
                                   key=lambda x: x.point_counter)
             if curr_node.parent and curr_node.parent.parent and \
-                    rotate_order[2].can_rotate_for_balance():
-                rotate_order[2]._rotate()
-                if collapsibles is not None and rotate_order[2].is_leaf() and \
-                        rotate_order[2].siblings()[0].is_leaf() and \
-                        rotate_order[2].siblings()[len(rotate_order[2].siblings())-1].is_leaf():
+                    rotate_order[0].can_rotate_for_balance():
+                rotate_order[0]._rotate()
+                if collapsibles is not None and rotate_order[0].is_leaf() and \
+                        rotate_order[0].siblings()[0].is_leaf():
                     heappush(collapsibles,
-                             (rotate_order[2].parent.children_max_d,
-                              rotate_order[2].parent))
-                #curr_node = rotate_order[2].parent
-                curr_node = rotate_order[2]
+                             (rotate_order[0].parent.children_max_d,
+                              rotate_order[0].parent))
+                curr_node = rotate_order[0].parent
             elif curr_node.parent and curr_node.parent.parent and \
                     rotate_order[1].can_rotate_for_balance():
                 rotate_order[1]._rotate()
                 if collapsibles is not None and rotate_order[1].is_leaf() and \
-                        rotate_order[1].siblings()[0].is_leaf() and \
-                        rotate_order[1].siblings()[len(rotate_order[1].siblings())-1].is_leaf():
+                        rotate_order[1].siblings()[0].is_leaf():
                     heappush(collapsibles,
                              (rotate_order[1].parent.children_max_d,
                               rotate_order[1].parent))
-                #curr_node = rotate_order[1].parent
-                curr_node = rotate_order[1]
-            elif curr_node.parent and curr_node.parent.parent and \
-                    rotate_order[0].can_rotate_for_balance():
-                rotate_order[0]._rotate()
-                if collapsibles is not None and rotate_order[0].is_leaf() and \
-                        rotate_order[0].siblings()[0].is_leaf() and \
-                        rotate_order[0].siblings()[len(rotate_order[0].siblings())-1].is_leaf():
-                    heappush(collapsibles,
-                             (rotate_order[0].parent.children_max_d,
-                              rotate_order[0].parent))
-                curr_node = rotate_order[0]
+                curr_node = rotate_order[1].parent
             else:
                 curr_node = curr_node.parent
 
