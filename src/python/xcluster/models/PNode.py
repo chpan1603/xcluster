@@ -149,11 +149,11 @@ class PNode:
             return root
         else:
             curr_node = self.a_star_exact(pt)
-            if self.parent and len(curr_node.siblings) == 1:
+            if curr_node.parent and len(curr_node.siblings()) == 1:
                 new_leaf = PNode(exact_dist_thres=self.exact_dist_threshold)
                 new_leaf.add_pt(pt)
-                self.parent.add_child(new_leaf)
-                self.parent.add_pt(pt)                
+                curr_node.parent.add_child(new_leaf)
+                curr_node.parent.add_pt(pt)                
             else:
                 new_leaf = curr_node._split_down(pt)
             ancs = new_leaf.parent._ancestors()
@@ -265,11 +265,11 @@ class PNode:
                                 self.pts.append(cc)
 
             # Update the cached distances at the parent.
-            if self.parent:
-                self.parent._update_children_min_d()
-                self.parent._update_children_max_d()
-                self._update_sibling_min_d()
-                self._update_sibling_max_d()
+            #if self.parent:
+                #self.parent._update_children_min_d()
+                #self.parent._update_children_max_d()
+            self._update_sibling_min_d()
+            self._update_sibling_max_d()
              
 
             # Now check if we need to update the parent (2 condiations):
@@ -292,11 +292,11 @@ class PNode:
         else:
             self.mins = self.pts[0][0]
             self.maxes = self.pts[0][0]
-            if self.parent:
-                self.parent._update_children_min_d()
-                self.parent._update_children_max_d()
-                self._update_sibling_min_d()
-                self._update_sibling_max_d()
+            #if self.parent:
+                #self.parent._update_children_min_d()
+                #self.parent._update_children_max_d()
+            self._update_sibling_min_d()
+            self._update_sibling_max_d()
             return self, True
 
     def _update_params_recursively(self):
@@ -376,14 +376,14 @@ class PNode:
         not a symmetric approximation) and taking the max to get the largest
         lower bound.
         """
-        if self.sibling():
-            s0 = self.sibling()[0]
-            if len(self.sibling()) == 1:
+        if self.siblings():
+            s0 = self.siblings()[0]
+            if len(self.siblings()) == 1:
                 self.sibling_min_d = max(
                     min(s0.min_distance(self.mins), s0.min_distance(self.maxes)),
                     min(self.min_distance(s0.mins), self.min_distance(s0.maxes)))
             else:
-                s1 = self.sibling()[1]
+                s1 = self.siblings()[1]
                 self.sibling_min_d = max(
                     min(s0.min_distance(self.mins), s0.min_distance(self.maxes)),
                     min(self.min_distance(s0.mins), self.min_distance(s0.maxes)),
@@ -399,14 +399,14 @@ class PNode:
         not a symmetric approximation) and taking the min to get the smallest
         valid lower bound.
         """
-        if self.sibling():
-            s0 = self.sibling()[0]
-            if len(self.sibling()) == 1:
+        if self.siblings():
+            s0 = self.siblings()[0]
+            if len(self.siblings()) == 1:
                 self.sibling_min_d = min(
                     max(s0.min_distance(self.mins), s0.min_distance(self.maxes)),
                     max(self.min_distance(s0.mins), self.min_distance(s0.maxes)))
             else:
-                s1 = self.sibling()[1]
+                s1 = self.siblings()[1]
                 self.sibling_min_d = min(
                     max(s0.min_distance(self.mins), s0.min_distance(self.maxes)),
                     max(self.min_distance(s0.mins), self.min_distance(s0.maxes)),
@@ -594,7 +594,7 @@ class PNode:
         grand_parent = self.parent.parent
         self.parent.deleted = True
         
-        if len(sibling) == 1:
+        if len(self.siblings()) == 1:
             
             # Make the aunt and sibling have the same parent
             new_parent = PNode(exact_dist_thres=self.exact_dist_threshold)
@@ -612,9 +612,9 @@ class PNode:
             grand_parent.add_child(self)
                 
             # Update cached distances. Other cached distances will be updated later.
-            self.parent._update_children_min_d()
-            self.parent._update_children_max_d()
-            for child in self.parent:
+            #self.parent._update_children_min_d()
+            #self.parent._update_children_max_d()
+            for child in self.parent.children:
                 child._update_sibling_min_d()
                 child._update_sibling_max_d()
             new_parent._update()
@@ -644,15 +644,15 @@ class PNode:
             grand_parent.add_child(self)
                 
             # Update cached distances. Other cached distances will be updated later.
-            new_sibling2._update_children_min_d()
-            new_sibling2._update_children_max_d()
+            #new_sibling2._update_children_min_d()
+            #new_sibling2._update_children_max_d()
             for child in new_sibling2.children:
                 child._update_sibling_min_d()
                 child._update_sibling_max_d()
             new_sibling2._update()
             
-            new_parent._update_children_min_d()
-            new_parent._update_children_max_d()
+            #new_parent._update_children_min_d()
+            #new_parent._update_children_max_d()
             for child in new_parent.children:
                 child._update_sibling_min_d()
                 child._update_sibling_max_d()                
@@ -691,10 +691,9 @@ class PNode:
                 #curr_node = curr_node.parent
             elif curr_node.children:
                 masked = False  # This enables early stopping.
-                #curr_node = curr_node.parent
+                curr_node = curr_node.parent
             else:
-                #curr_node = curr_node.parent
-                pass
+                curr_node = curr_node.parent
 
     def recursive_rotate_if_unbalanced(self, collapsibles=None):
         """Rotate recursively if balance candidate detected.
@@ -751,8 +750,7 @@ class PNode:
                               rotate_order[0].parent))
                 curr_node = rotate_order[0]
             else:
-                #curr_node = curr_node.parent
-                pass
+                curr_node = curr_node.parent
 
     def purity(self, cluster=None):
         """Compute the purity of this node.
