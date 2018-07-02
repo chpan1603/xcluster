@@ -149,7 +149,8 @@ class PNode:
             return root
         else:
             curr_node = self.a_star_exact(pt)
-            if curr_node.parent and len(curr_node.siblings()) == 1:
+            if curr_node.parent and len(curr_node.siblings()) == 1 and \
+                    not curr_node.is_closer_to_new(pt):
                 new_leaf = PNode(exact_dist_thres=self.exact_dist_threshold)
                 new_leaf.add_pt(pt)
                 curr_node.parent.add_child(new_leaf)
@@ -934,38 +935,74 @@ class PNode:
         """
         if self.parent and self.parent.parent:
             aunt = self.aunts()[0]
-            aunt1 = self.aunts()[1]
             sibling = self.siblings()[0]
             aunt_max_dist = max(aunt.max_distance(sibling.mins),
                                 aunt.max_distance(sibling.maxes))
-            aunt1_max_dist = max(aunt1.max_distance(sibling.mins),
-                                aunt1.max_distance(sibling.maxes))
             other_max_dist = max(sibling.max_distance(aunt.mins),
                                  sibling.max_distance(aunt.maxes))
-            other1_max_dist = max(sibling.max_distance(aunt1.mins),
-                                 sibling.max_distance(aunt1.maxes))            
-            if len(self.siblings()) == 1:
-                # Since both max distances are upper bounds, we can safely take the
-                # min and it will still be an upper bound.
-                smallest_max_dist = min(aunt_max_dist, aunt1_max_dist,
-                                    other_max_dist, other1_max_dist)                
+            if len(self.aunts()) == 1:
+                if len(self.siblings()) == 1:
+                    # Since both max distances are upper bounds, we can safely take the
+                    # min and it will still be an upper bound.
+                    smallest_max_dist = min(aunt_max_dist, other_max_dist)
+                else:
+                    sibling1 = self.siblings()[1]
+                    aunt_1_max_dist = max(aunt.max_distance(sibling1.mins),
+                                          aunt.max_distance(sibling1.maxes))
+                    other_1_max_dist = max(sibling1.max_distance(aunt.mins),
+                                           sibling1.max_distance(aunt.maxes))
+                    
+                    smallest_max_dist = min(aunt_max_dist, other_max_dist, 
+                                            aunt_1_max_dist, other_1_max_dist)            
             else:
-                sibling1 = self.siblings()[1]
-                aunt_1_max_dist = max(aunt.max_distance(sibling1.mins),
-                                    aunt.max_distance(sibling1.maxes))
-                aunt1_1_max_dist = max(aunt1.max_distance(sibling1.mins),
-                                     aunt1.max_distance(sibling1.maxes))
-                other_1_max_dist = max(sibling1.max_distance(aunt.mins),
-                                     sibling1.max_distance(aunt.maxes))
-                other1_1_max_dist = max(sibling1.max_distance(aunt1.mins),
-                                      sibling1.max_distance(aunt1.maxes))
-                
-                smallest_max_dist = min(aunt_max_dist, aunt1_max_dist, 
-                                        other_max_dist, other1_max_dist,
-                                        aunt_1_max_dist, aunt1_1_max_dist, 
-                                        other_1_max_dist, other1_1_max_dist)            
+                if len(self.siblings()) == 1:                
+                    aunt1 = self.aunts()[1]
+                    aunt1_max_dist = max(aunt1.max_distance(sibling.mins),
+                                         aunt1.max_distance(sibling.maxes))
+                    other1_max_dist = max(sibling.max_distance(aunt1.mins),
+                                          sibling.max_distance(aunt1.maxes))
+                    smallest_max_dist = min(aunt_max_dist, aunt1_max_dist,
+                                            other_max_dist, other1_max_dist)                
+                else:
+                    sibling1 = self.siblings()[1]
+                    aunt_1_max_dist = max(aunt.max_distance(sibling1.mins),
+                                          aunt.max_distance(sibling1.maxes))
+                    aunt1_1_max_dist = max(aunt1.max_distance(sibling1.mins),
+                                           aunt1.max_distance(sibling1.maxes))
+                    other_1_max_dist = max(sibling1.max_distance(aunt.mins),
+                                           sibling1.max_distance(aunt.maxes))
+                    other1_1_max_dist = max(sibling1.max_distance(aunt1.mins),
+                                            sibling1.max_distance(aunt1.maxes))
+                    
+                    smallest_max_dist = min(aunt_max_dist, aunt1_max_dist, 
+                                            other_max_dist, other1_max_dist,
+                                            aunt_1_max_dist, aunt1_1_max_dist, 
+                                            other_1_max_dist, other1_1_max_dist)            
             sibling_min_dist = self.sibling_min_d
             return smallest_max_dist < sibling_min_dist
+        else:
+            return False
+
+
+    def is_closer_to_new(self, pt):
+        """Determine if self is "closer" to the new node than its sibling.
+        
+        Check to see if every point in self node is closer to new node 
+        than in its sibling's bounding box.
+        
+        Args:
+        None.
+        
+        Returns:
+        True if self is "closer" to new node than it sibling. False, otherwise.
+        """
+        if self.parent:
+            new_max_dist = self.max_distance(pt[0])
+            sibling = self.siblings()[0]
+            sibling_min_dist = self.sibling_min_d
+            sibling_new_min_dist = sibling.min_distance(pt[0])
+            smallest_min_dist = min(sibling_min_dist, sibling_new_min_dist)
+            return new_max_dist < smallest_min_dist
         else:
             return False
 
