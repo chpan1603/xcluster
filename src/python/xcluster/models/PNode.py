@@ -973,7 +973,6 @@ class PNode:
                                            sibling1.max_distance(aunt.maxes))
                     other1_1_max_dist = max(sibling1.max_distance(aunt1.mins),
                                             sibling1.max_distance(aunt1.maxes))
-                    
                     smallest_max_dist = min(aunt_max_dist, aunt1_max_dist, 
                                             other_max_dist, other1_max_dist,
                                             aunt_1_max_dist, aunt1_1_max_dist, 
@@ -982,7 +981,6 @@ class PNode:
             return smallest_max_dist < sibling_min_dist
         else:
             return False
-
 
     def is_closer_to_new(self, pt):
         """Determine if self is "closer" to the new node than its sibling.
@@ -1026,36 +1024,50 @@ class PNode:
         """
         if self.parent and self.parent.parent:
             aunt = self.aunts()[0]
-            aunt1 = self.aunts()[1]
             sibling = self.siblings()[0]
             sib_max_dist = self.sibling_max_d
             aunt_min_dist = min(aunt.min_distance(sibling.mins),
                                 aunt.min_distance(sibling.maxes))
-            aunt1_min_dist = min(aunt1.min_distance(sibling.mins),
-                                aunt1.min_distance(sibling.maxes))
             other_min_dist = min(sibling.min_distance(aunt.mins),
                                  sibling.min_distance(aunt.maxes))
-            other1_min_dist = min(sibling.min_distance(aunt1.mins),
-                                 sibling.min_distance(aunt1.maxes))
-            if len(self.siblings()) == 1:
-                # Since oth min distances are lower bounds, we can use the bigger
-                # one safely (it's more accurate).
-                largest_aunt_min_dist = max(aunt_min_dist, aunt1_min_dist, 
-                                            other_min_dist, other1_min_dist)
+            if len(self.aunts()) == 1:
+                if len(self.siblings()) == 1:
+                    # Since oth min distances are lower bounds, we can use the bigger
+                    # one safely (it's more accurate).
+                    largest_aunt_min_dist = max(aunt_min_dist, other_min_dist)
+                else:
+                    sibling1 = self.siblings()[1]
+                    aunt_1_min_dist = min(aunt.min_distance(sibling1.mins),
+                                          aunt.min_distance(sibling1.maxes))
+                    other_1_min_dist = min(sibling1.min_distance(aunt.mins),
+                                           sibling1.min_distance(aunt.maxes))
+                    largest_aunt_min_dist = max(aunt_min_dist, other_min_dist,
+                                                aunt_1_min_dist, other_1_min_dist)                
             else:
-                sibling1 = self.siblings()[1]
-                aunt_1_min_dist = min(aunt.min_distance(sibling1.mins),
-                                    aunt.min_distance(sibling1.maxes))
-                aunt1_1_min_dist = min(aunt1.min_distance(sibling1.mins),
-                                     aunt1.min_distance(sibling1.maxes))
-                other_1_min_dist = min(sibling1.min_distance(aunt.mins),
-                                     sibling1.min_distance(aunt.maxes))
-                other1_1_min_dist = min(sibling1.min_distance(aunt1.mins),
-                                      sibling1.min_distance(aunt1.maxes))
-                largest_aunt_min_dist = max(aunt_min_dist, aunt1_min_dist, 
-                                            other_min_dist, other1_min_dist,
-                                            aunt_1_min_dist, aunt1_1_min_dist, 
-                                            other_1_min_dist, other1_1_min_dist)                
+                aunt1 = self.aunts()[1]
+                aunt1_min_dist = min(aunt1.min_distance(sibling.mins),
+                                     aunt1.min_distance(sibling.maxes))
+                other1_min_dist = min(sibling.min_distance(aunt1.mins),
+                                      sibling.min_distance(aunt1.maxes))
+                if len(self.siblings()) == 1:
+                    # Since oth min distances are lower bounds, we can use the bigger
+                    # one safely (it's more accurate).
+                    largest_aunt_min_dist = max(aunt_min_dist, aunt1_min_dist, 
+                                            other_min_dist, other1_min_dist)
+                else:
+                    sibling1 = self.siblings()[1]
+                    aunt_1_min_dist = min(aunt.min_distance(sibling1.mins),
+                                          aunt.min_distance(sibling1.maxes))
+                    aunt1_1_min_dist = min(aunt1.min_distance(sibling1.mins),
+                                           aunt1.min_distance(sibling1.maxes))
+                    other_1_min_dist = min(sibling1.min_distance(aunt.mins),
+                                           sibling1.min_distance(aunt.maxes))
+                    other1_1_min_dist = min(sibling1.min_distance(aunt1.mins),
+                                            sibling1.min_distance(aunt1.maxes))
+                    largest_aunt_min_dist = max(aunt_min_dist, aunt1_min_dist, 
+                                                other_min_dist, other1_min_dist,
+                                                aunt_1_min_dist, aunt1_1_min_dist, 
+                                                other_1_min_dist, other1_1_min_dist)                
             return sib_max_dist > largest_aunt_min_dist
         else:
             return False
@@ -1064,36 +1076,61 @@ class PNode:
         """Check if rotating self would produce better balance."""
         if self.parent and self.parent.parent:
             aunt_size = self.aunts()[0].point_counter
-            aunt1_size = self.aunts()[1].point_counter
             parent_size = self.parent.point_counter
             self_size = self.point_counter
             sibling_size = self.siblings()[0].point_counter
             if len(self.siblings()) == 1:
-                new_parent_size = aunt_size + aunt1_size + sibling_size
-                bal = min(self_size, sibling_size) / max(self_size, sibling_size) \
+                if len(self.siblings()) == 1:
+                    new_parent_size = sibling_size + aunt_size
+                    bal = min(self_size, sibling_size) / \
+                        max(self_size, sibling_size) \
+                        + min(aunt_size, parent_size) / \
+                        max(aunt_size, parent_size)
+                    bal_rot = min(sibling_size, aunt_size) / \
+                        max(sibling_size, aunt_size) \
+                        + min(self_size, new_parent_size) / \
+                        max(self_size, new_parent_size)
+                else:
+                    sibling1_size = self.siblings()[1].point_counter
+                    new_parent_size = sibling_size + sibling1_size + aunt_size
+                    bal = min(self_size, sibling_size, sibling1_size) / \
+                        max(self_size, sibling_size, sibling1_size) \
+                        + min(aunt_size, parent_size) / \
+                        max(aunt_size, parent_size)
+                    bal_rot = min(sibling_size, sibling1_size, aunt_size) / \
+                        max(sibling_size, sibling1_size, aunt_size) \
+                        + min(self_size, new_parent_size) / \
+                        max(self_size, new_parent_size)
+                return bal < bal_rot
+            else:
+                aunt1_size = self.aunts()[1].point_counter
+                if len(self.siblings()) == 1:                
+                    new_parent_size = aunt_size + aunt1_size + sibling_size
+                    bal = min(self_size, sibling_size) / \
+                        max(self_size, sibling_size) \
                         + min(aunt_size, aunt1_size, parent_size) \
                         / max(aunt_size, aunt1_size, parent_size)
-                bal_rot = min(self_size, new_parent_size) \
+                    bal_rot = min(self_size, new_parent_size) \
                         / max(self_size, new_parent_size) \
                         + min(sibling_size, aunt_size, aunt1_size) \
                         / max(sibling_size, aunt_size, aunt1_size)
-                return bal < bal_rot
-            else:
-                sibling1_size = self.siblings()[1].point_counter
-                new_sibling2_size = aunt_size + aunt1_size
-                new_parent_size = sibling_size + sibling1_size \
-                        + new_sibling2_size
-                bal = min(self_size, sibling_size, sibling1_size) \
+                    return bal < bal_rot
+                else:
+                    sibling1_size = self.siblings()[1].point_counter
+                    new_sibling2_size = aunt_size + aunt1_size
+                    new_parent_size = sibling_size + sibling1_size \
+                            + new_sibling2_size
+                    bal = min(self_size, sibling_size, sibling1_size) \
                         / max(self_size, sibling_size, sibling1_size) \
                         + min(aunt_size, aunt1_size, parent_size) \
                         / max(aunt_size, aunt1_size, parent_size)
-                bal_rot = min(self_size, new_parent_size) \
+                    bal_rot = min(self_size, new_parent_size) \
                         / max(self_size, new_parent_size) \
                         + min(sibling_size, sibling1_size, new_sibling2_size) \
                         / max(sibling_size, sibling1_size, new_sibling2_size) \
                         + min(aunt_size, aunt1_size) \
                         / max(aunt_size, aunt1_size)
-                return bal / 2 < bal_rot / 3
+                    return bal / 2 < bal_rot / 3
         else:
             return False
 
