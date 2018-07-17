@@ -430,6 +430,7 @@ class PNode:
         A pointer to a node (that contains the nearest neighbor of x).
         """
         dp = pt[0]
+        print(dp)
         if not self.children:
             return self
         else:
@@ -440,6 +441,7 @@ class PNode:
                 priority, target = heappop(frontier)
                 if target.children:
                     for child in target.children:
+                        print(child.mins, child.maxes)
                         min_d = heuristic(child, dp)
                         heappush(frontier, (min_d, child))
                 else:
@@ -585,7 +587,7 @@ class PNode:
     def _rotate(self):
         """Rotate self.
         
-        This essentially swaps the position of self's sibling and self's aunt
+        This essentially swaps the position of self and self's aunt
         in the tree.
         
         Args:
@@ -595,70 +597,117 @@ class PNode:
         None
         """
         aunt = self.aunts()[0]
-        aunt1 = self.aunts()[1]
         sibling = self.siblings()[0]
         grand_parent = self.parent.parent
         self.parent.deleted = True
         
-        if len(self.siblings()) == 1:
-            
-            # Make the aunt and sibling have the same parent
-            new_parent = PNode(exact_dist_thres=self.exact_dist_threshold)
-            new_parent.pts = None
-            new_parent.add_child(aunt)
-            new_parent.add_child(aunt1)
-            new_parent.add_child(sibling)
-            new_parent.point_counter = aunt.point_counter + \
-                    aunt1.point_counter + sibling.point_counter
-            
-            # Set the children of the grandparent to be the new_parent and
-            # self.
-            grand_parent.children = []
-            grand_parent.add_child(new_parent)
-            grand_parent.add_child(self)
+        if len(self.aunts()) == 1:
+            if len(self.siblings()) == 1:
+                # Make the aunt and sibling have the same parent
+                new_parent = PNode(exact_dist_thres=self.exact_dist_threshold)
+                new_parent.pts = None
+                new_parent.add_child(aunt)
+                new_parent.add_child(sibling)
+                new_parent.point_counter = aunt.point_counter + sibling.point_counter
                 
-            # Update cached distances. Other cached distances will be updated later.
-            #self.parent._update_children_min_d()
-            #self.parent._update_children_max_d()
-            for child in self.siblings()[0].children:
-                child._update_sibling_min_d()
-                child._update_sibling_max_d()
-            new_parent._update()
-            
+                # Set the children of the grandparent to be the new_parent and
+                # self.
+                grand_parent.children = []
+                grand_parent.add_child(new_parent)
+                grand_parent.add_child(self)
+                
+                # Update cached distances. Other cached distances will be updated later.
+                #self.parent._update_children_min_d()
+                #self.parent._update_children_max_d()
+                for child in self.siblings()[0].children:
+                    child._update_sibling_min_d()
+                    child._update_sibling_max_d()
+                new_parent._update()
+            else:
+                sibling1 = self.siblings()[1]
+                # Make the aunt and sibling have the same parent
+                new_parent = PNode(exact_dist_thres=self.exact_dist_threshold)
+                new_parent.pts = None
+                new_parent.add_child(aunt)
+                new_parent.add_child(sibling)
+                new_parent.add_child(sibling1)
+                new_parent.point_counter = aunt.point_counter + \
+                        sibling.point_counter + sibling1.point_counter
+                
+                # Set the children of the grandparent to be the new_parent and
+                # self.
+                grand_parent.children = []
+                grand_parent.add_child(new_parent)
+                grand_parent.add_child(self)
+                
+                # Update cached distances. Other cached distances will be updated later.
+                #self.parent._update_children_min_d()
+                #self.parent._update_children_max_d()
+                for child in self.siblings()[0].children:
+                    child._update_sibling_min_d()
+                    child._update_sibling_max_d()
+                new_parent._update()            
         else:
-            sibling1 = self.siblings()[1]
-            # Make the aunt and sibling have the same parent
-            new_sibling2 = PNode(exact_dist_thres=self.exact_dist_threshold)
-            new_sibling2.pts = None
-            new_sibling2.add_child(aunt)
-            new_sibling2.add_child(aunt1)
-            new_sibling2.point_counter = aunt.point_counter + \
-                    aunt1.point_counter
-
-            new_parent = PNode(exact_dist_thres=self.exact_dist_threshold)
-            new_parent.pts = None
-            new_parent.add_child(sibling)
-            new_parent.add_child(sibling1)
-            new_parent.add_child(new_sibling2)  
-            new_parent.point_counter = sibling.point_counter + \
-                    sibling1.point_counter + new_sibling2.point_counter
+            aunt1 = self.aunts()[1]
+            if len(self.siblings()) == 1:            
+                # Make the aunt and sibling have the same parent
+                new_parent = PNode(exact_dist_thres=self.exact_dist_threshold)
+                new_parent.pts = None
+                new_parent.add_child(aunt)
+                new_parent.add_child(aunt1)
+                new_parent.add_child(sibling)
+                new_parent.point_counter = aunt.point_counter + \
+                        aunt1.point_counter + sibling.point_counter
             
-            # Set the children of the grandparent to be the new_parent and
-            # self.
-            grand_parent.children = []
-            grand_parent.add_child(new_parent)
-            grand_parent.add_child(self)
+                # Set the children of the grandparent to be the new_parent and
+                # self.
+                grand_parent.children = []
+                grand_parent.add_child(new_parent)
+                grand_parent.add_child(self)
+                    
+                # Update cached distances. Other cached distances will be updated later.
+                #self.parent._update_children_min_d()
+                #self.parent._update_children_max_d()
+                for child in self.siblings()[0].children:
+                    child._update_sibling_min_d()
+                    child._update_sibling_max_d()
+                new_parent._update()
+            
+            else:
+                sibling1 = self.siblings()[1]
+                # Make the aunt and sibling have the same parent
+                new_sibling2 = PNode(exact_dist_thres=self.exact_dist_threshold)
+                new_sibling2.pts = None
+                new_sibling2.add_child(aunt)
+                new_sibling2.add_child(aunt1)
+                new_sibling2.point_counter = aunt.point_counter + \
+                        aunt1.point_counter
                 
-            # Update cached distances. Other cached distances will be updated later.
-            #new_sibling2._update_children_min_d()
-            #new_sibling2._update_children_max_d()
-            for child in new_sibling2.children:
-                child._update_sibling_min_d()
-                child._update_sibling_max_d()
-            new_sibling2._update()
+                new_parent = PNode(exact_dist_thres=self.exact_dist_threshold)
+                new_parent.pts = None
+                new_parent.add_child(sibling)
+                new_parent.add_child(sibling1)
+                new_parent.add_child(new_sibling2)  
+                new_parent.point_counter = sibling.point_counter + \
+                        sibling1.point_counter + new_sibling2.point_counter
             
-            #new_parent._update_children_min_d()
-            #new_parent._update_children_max_d()            
+                # Set the children of the grandparent to be the new_parent and
+                # self.
+                grand_parent.children = []
+                grand_parent.add_child(new_parent)
+                grand_parent.add_child(self)
+                    
+                # Update cached distances. Other cached distances will be updated later.
+                #new_sibling2._update_children_min_d()
+                #new_sibling2._update_children_max_d()
+                for child in new_sibling2.children:
+                    child._update_sibling_min_d()
+                    child._update_sibling_max_d()
+                new_sibling2._update()
+                new_parent._update()
+            
+                #new_parent._update_children_min_d()
+                #new_parent._update_children_max_d()            
 
     def recursive_rotate_if_masked(self, collapsibles=None):
         """Rotate recursively if masking detected.
@@ -709,21 +758,22 @@ class PNode:
         Returns:
         None.
         """
-        curr_node = self.siblings()[0]
+        curr_node = self
         r = curr_node.root()
         while curr_node != r:
             sibling = curr_node.siblings()[0]
-            rotate_order = sorted([sibling, curr_node],
+            sibling1 = curr_node.siblings()[len(curr_node.siblings())-1]
+            rotate_order = sorted([sibling, sibling1, curr_node],
                                   key=lambda x: x.point_counter)
             if curr_node.parent and curr_node.parent.parent and \
-                    rotate_order[0].can_rotate_for_balance():
-                rotate_order[0]._rotate()
-                if collapsibles is not None and rotate_order[0].is_leaf() and \
-                        rotate_order[0].siblings()[0].is_leaf():
+                    rotate_order[2].can_rotate_for_balance():
+                rotate_order[2]._rotate()
+                if collapsibles is not None and rotate_order[2].is_leaf() and \
+                        rotate_order[2].siblings()[0].is_leaf():
                     heappush(collapsibles,
-                             (rotate_order[0].parent.children_max_d,
-                              rotate_order[0].parent))
-                curr_node = rotate_order[0].parent
+                             (rotate_order[2].parent.children_max_d,
+                              rotate_order[2].parent))
+                #curr_node = rotate_order[2].parent
             elif curr_node.parent and curr_node.parent.parent and \
                     rotate_order[1].can_rotate_for_balance():
                 rotate_order[1]._rotate()
@@ -732,7 +782,16 @@ class PNode:
                     heappush(collapsibles,
                              (rotate_order[1].parent.children_max_d,
                               rotate_order[1].parent))
-                curr_node = rotate_order[1].parent
+                #curr_node = rotate_order[1].parent
+            elif curr_node.parent and curr_node.parent.parent and \
+                    rotate_order[0].can_rotate_for_balance():
+                rotate_order[0]._rotate()
+                if collapsibles is not None and rotate_order[0].is_leaf() and \
+                        rotate_order[0].siblings()[0].is_leaf():
+                    heappush(collapsibles,
+                             (rotate_order[0].parent.children_max_d,
+                              rotate_order[0].parent))
+                #curr_node = rotate_order[0].parent
             else:
                 curr_node = curr_node.parent
 
@@ -955,12 +1014,12 @@ class PNode:
                     smallest_max_dist = min(aunt_max_dist, other_max_dist, 
                                             aunt_1_max_dist, other_1_max_dist)            
             else:
-                if len(self.siblings()) == 1:                
-                    aunt1 = self.aunts()[1]
-                    aunt1_max_dist = max(aunt1.max_distance(sibling.mins),
-                                         aunt1.max_distance(sibling.maxes))
-                    other1_max_dist = max(sibling.max_distance(aunt1.mins),
-                                          sibling.max_distance(aunt1.maxes))
+                aunt1 = self.aunts()[1]
+                aunt1_max_dist = max(aunt1.max_distance(sibling.mins),
+                                     aunt1.max_distance(sibling.maxes))
+                other1_max_dist = max(sibling.max_distance(aunt1.mins),
+                                      sibling.max_distance(aunt1.maxes))
+                if len(self.siblings()) == 1:
                     smallest_max_dist = min(aunt_max_dist, aunt1_max_dist,
                                             other_max_dist, other1_max_dist)                
                 else:
@@ -1079,7 +1138,7 @@ class PNode:
             parent_size = self.parent.point_counter
             self_size = self.point_counter
             sibling_size = self.siblings()[0].point_counter
-            if len(self.siblings()) == 1:
+            if len(self.siblings()) <= 1:
                 if len(self.siblings()) == 1:
                     new_parent_size = sibling_size + aunt_size
                     bal = min(self_size, sibling_size) / \
@@ -1103,6 +1162,9 @@ class PNode:
                         max(self_size, new_parent_size)
                 return bal < bal_rot
             else:
+                print("aunt_size:", len(self.aunts()))
+                print("aunts:", self.aunts())
+                print(len(self.aunts()) == 1)
                 aunt1_size = self.aunts()[1].point_counter
                 if len(self.siblings()) == 1:                
                     new_parent_size = aunt_size + aunt1_size + sibling_size
